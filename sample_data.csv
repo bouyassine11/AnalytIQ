@@ -1,0 +1,21 @@
+id,name,age,salary,department,experience,performance_score
+1,John Doe,28,55000,Engineering,3,8.5
+2,Jane Smith,35,75000,Marketing,8,9.2
+3,Bob Johnson,42,95000,Engineering,15,7.8
+4,Alice Brown,31,65000,Sales,5,8.9
+5,Charlie Wilson,29,58000,Engineering,4,8.1
+6,Diana Martinez,38,82000,Marketing,10,9.5
+7,Eve Davis,45,105000,Engineering,18,8.7
+8,Frank Miller,33,70000,Sales,7,7.5
+9,Grace Lee,27,52000,Marketing,2,8.3
+10,Henry Taylor,40,92000,Engineering,14,9.1
+11,Ivy Anderson,36,78000,Sales,9,8.6
+12,Jack Thomas,30,62000,Marketing,5,7.9
+13,Kate White,44,98000,Engineering,16,9.3
+14,Leo Harris,32,68000,Sales,6,8.4
+15,Mia Clark,26,,Marketing,1,7.7
+16,Noah Lewis,39,88000,Engineering,12,8.8
+17,Olivia Walker,34,72000,Sales,8,9.0
+18,Paul Hall,41,94000,Engineering,15,8.2
+19,Quinn Allen,29,60000,Marketing,4,7.6
+20,Ruby Young,37,80000,Sales,10,9.4
