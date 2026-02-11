@@ -34,19 +34,35 @@ async def chat_with_dataset(
     analysis = dataset.get("analysis_result", {})
     eda = analysis.get("eda_results", {})
     cleaning = analysis.get("cleaning_report", {})
+    overview = eda.get("overview", {})
+    quality = eda.get("data_quality", {})
+    column_analysis = eda.get("column_analysis", {})
     
-    # Build context for AI
-    context = f"""Dataset: {dataset['filename']}
-Rows: {eda.get('overview', {}).get('rows', 'N/A')}
-Columns: {eda.get('overview', {}).get('columns', 'N/A')}
-Data Quality: {eda.get('data_quality', {}).get('completeness', 0):.1f}% complete
-Missing Values: {len(cleaning.get('missing_values', {}))} columns
-Duplicates Removed: {cleaning.get('duplicates_removed', 0)}
-Outliers: {len(cleaning.get('outliers_detected', {}))} columns detected
+    # Build detailed context
+    columns_info = "\n".join([f"- {col}: {info.get('dtype', 'unknown')} ({info.get('unique_values', 0)} unique values)" 
+                              for col, info in list(column_analysis.items())[:10]])
+    
+    context = f"""You are analyzing the dataset '{dataset['filename']}'.
 
-Column Analysis: {list(eda.get('column_analysis', {}).keys())}
+Dataset Overview:
+- Total Rows: {overview.get('rows', 'N/A'):,}
+- Total Columns: {overview.get('columns', 'N/A')}
+- Data Completeness: {quality.get('completeness', 0):.1f}%
+- Memory Usage: {overview.get('memory_usage', 'N/A')}
 
-User Question: {chat_message.message}"""
+Data Quality:
+- Missing Values: {len(cleaning.get('missing_values', {}))} columns affected
+- Duplicates Removed: {cleaning.get('duplicates_removed', 0)}
+- Outliers Detected: {len(cleaning.get('outliers_detected', {}))} columns
+- Numeric Columns: {quality.get('numeric_columns', 0)}
+- Categorical Columns: {quality.get('categorical_columns', 0)}
+
+Column Details:
+{columns_info}
+
+User Question: {chat_message.message}
+
+Provide a clear, concise answer based on the data above. If asked about specific columns, trends, or recommendations, use the context provided."""
     
     try:
         client = OpenAI(
@@ -59,7 +75,7 @@ User Question: {chat_message.message}"""
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a data analyst assistant. Answer questions about the dataset based on the provided context. Be concise and helpful."
+                    "content": "You are an expert data analyst. Provide clear, actionable insights about datasets. Be specific and reference actual numbers from the data."
                 },
                 {
                     "role": "user",
@@ -74,7 +90,18 @@ User Question: {chat_message.message}"""
         return ChatResponse(response=response_text)
         
     except Exception as e:
-        # Fallback response
-        return ChatResponse(
-            response=f"I can help you understand your dataset '{dataset['filename']}' with {eda.get('overview', {}).get('rows', 'N/A')} rows and {eda.get('overview', {}).get('columns', 'N/A')} columns. The data is {eda.get('data_quality', {}).get('completeness', 0):.1f}% complete. What specific aspect would you like to know more about?"
-        )
+        # Smart fallback based on question
+        question_lower = chat_message.message.lower()
+        
+        if "column" in question_lower or "field" in question_lower:
+            cols = list(column_analysis.keys())[:5]
+            return ChatResponse(response=f"Your dataset has {len(column_analysis)} columns. The main ones are: {', '.join(cols)}. Each column has been analyzed for data types, missing values, and distributions.")
+        
+        elif "quality" in question_lower or "clean" in question_lower:
+            return ChatResponse(response=f"Your data quality is {quality.get('completeness', 0):.1f}% complete. We removed {cleaning.get('duplicates_removed', 0)} duplicates and handled missing values in {len(cleaning.get('missing_values', {}))} columns.")
+        
+        elif "row" in question_lower or "size" in question_lower:
+            return ChatResponse(response=f"Your dataset contains {overview.get('rows', 0):,} rows and {overview.get('columns', 0)} columns, using approximately {overview.get('memory_usage', 'N/A')} of memory.")
+        
+        else:
+            return ChatResponse(response=f"I can help you understand your dataset '{dataset['filename']}' with {overview.get('rows', 0):,} rows and {overview.get('columns', 0)} columns. Ask me about specific columns, data quality, or recommendations!")
